@@ -56,20 +56,19 @@ def rotate_logs_if_needed():
 
 def hexdump(data: bytes, width=16):
     """Convert binary data to hexdump format for readable logging"""
-    # Convert bytes to hex string and split into pairs
-    hexed = binascii.hexlify(data).decode()
-    parts = [hexed[i:i+2] for i in range(0, len(hexed), 2)]
+    # Pre-allocate list for better performance with large data
     lines = []
+    data_len = len(data)
     
     # Process data in chunks of 'width' bytes
-    for i in range(0, len(parts), width):
-        chunk = parts[i:i+width]
-        hexpart = " ".join(chunk)  # Hex representation
-        # Convert back to bytes for printable representation
-        raw = bytes.fromhex("".join(chunk))
+    for i in range(0, data_len, width):
+        chunk = data[i:i+width]
+        # Format hex part with fewer operations
+        hexpart = ' '.join(f'{b:02x}' for b in chunk)
         # Create printable string (non-printable chars become '.')
-        printable = ''.join([chr(b) if 32 <= b <= 126 else '.' for b in raw])
+        printable = ''.join(chr(b) if 32 <= b <= 126 else '.' for b in chunk)
         lines.append(f"{hexpart:<{width*3}}  {printable}")
+    
     return "\n".join(lines)
 
 class HPHandler(socketserver.BaseRequestHandler):

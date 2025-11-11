@@ -88,18 +88,17 @@ def load_targets(target_arg):
         # Single hash provided directly
         return [target_arg.strip().lower()]
 
-def hash_candidate(candidate: str, algo_name: str) -> str:
+def hash_candidate(candidate: str, hfunc: Callable) -> str:
     """
     Hash a password candidate using the specified algorithm
     
     Args:
         candidate: Password string to hash
-        algo_name: Hash algorithm name (md5/sha1/sha256)
+        hfunc: Hash function (from hashlib)
         
     Returns:
         Hexadecimal hash string
     """
-    hfunc = HASH_FUNCS[algo_name]
     h = hfunc()
     h.update(candidate.encode("utf-8", errors="ignore"))
     return h.hexdigest().lower()
@@ -122,6 +121,11 @@ def dict_mode(wordlist_path: str, algo: str, targets, mangle: bool, stop_on_firs
         print("ERROR: valid --wordlist required for dict mode.", file=sys.stderr)
         sys.exit(2)
     
+    # Cache hash function to avoid repeated dictionary lookups
+    hfunc = HASH_FUNCS[algo]
+    # Convert target list to set for O(1) lookup instead of O(n)
+    target_set = set(targets)
+    
     found_any = False
     with open(wordlist_path, "r", errors="ignore") as f:
         for line_num, raw in enumerate(f, 1):
@@ -141,15 +145,14 @@ def dict_mode(wordlist_path: str, algo: str, targets, mangle: bool, stop_on_firs
             
             # Test each candidate variation
             for cand in candidates:
-                h = hash_candidate(cand, algo)
+                h = hash_candidate(cand, hfunc)
                 
-                # Check against all target hashes
-                for target_hash in targets:
-                    if h == target_hash:
-                        print(f"[FOUND] {target_hash} -> '{cand}' (dict)")
-                        found_any = True
-                        if stop_on_first:
-                            return True
+                # Check against all target hashes using set lookup (O(1))
+                if h in target_set:
+                    print(f"[FOUND] {h} -> '{cand}' (dict)")
+                    found_any = True
+                    if stop_on_first:
+                        return True
             
             # Optional: progress indicator for large wordlists
             if line_num % 10000 == 0:
@@ -172,6 +175,11 @@ def brute_mode(charset: str, min_len: int, max_len: int, algo: str, targets, sto
     Returns:
         True if any password was cracked, False otherwise
     """
+    # Cache hash function to avoid repeated dictionary lookups
+    hfunc = HASH_FUNCS[algo]
+    # Convert target list to set for O(1) lookup instead of O(n)
+    target_set = set(targets)
+    
     found_any = False
     
     # Iterate through each password length
@@ -183,15 +191,14 @@ def brute_mode(charset: str, min_len: int, max_len: int, algo: str, targets, sto
         # Generate all possible combinations of given length
         for char_tuple in itertools.product(charset, repeat=length):
             candidate = ''.join(char_tuple)
-            hash_value = hash_candidate(candidate, algo)
+            hash_value = hash_candidate(candidate, hfunc)
             
-            # Check against all target hashes
-            for target_hash in targets:
-                if hash_value == target_hash:
-                    print(f"[FOUND] {target_hash} -> '{candidate}' (bruteforce, len={length})")
-                    found_any = True
-                    if stop_on_first:
-                        return True
+            # Check against all target hashes using set lookup (O(1))
+            if hash_value in target_set:
+                print(f"[FOUND] {hash_value} -> '{candidate}' (bruteforce, len={length})")
+                found_any = True
+                if stop_on_first:
+                    return True
         
         print(f"[*] Completed length {length}")
     

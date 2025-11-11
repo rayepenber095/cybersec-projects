@@ -173,14 +173,12 @@ class Analyzer:
             
             # Update talker statistics
             self.talkers[src] += 1  # Source sent a packet
-            self.talkers[dst] += 0  # Ensure destination is in counter
             
         # IPv6 packet analysis
         elif IPv6 in pkt:
             ip6 = pkt[IPv6]
             self.proto['IPv6'] += 1
             self.talkers[ip6.src] += 1
-            self.talkers[ip6.dst] += 0
             
         # Non-IP packets (ARP, etc.)
         else:
