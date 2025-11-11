@@ -61,14 +61,14 @@ def hexdump(data: bytes, width=16):
     parts = [hexed[i:i+2] for i in range(0, len(hexed), 2)]
     lines = []
     
-    # Process data in chunks of 'width' bytes
+    # Process data in chunks of 'width' bytes  
     for i in range(0, len(parts), width):
-        chunk = parts[i:i+width]
-        hexpart = " ".join(chunk)  # Hex representation
-        # Convert back to bytes for printable representation
-        raw = bytes.fromhex("".join(chunk))
+        chunk_hex = parts[i:i+width]
+        hexpart = " ".join(chunk_hex)  # Hex representation
+        # Work directly with data bytes instead of converting hex back to bytes
+        chunk_data = data[i:i+width]
         # Create printable string (non-printable chars become '.')
-        printable = ''.join([chr(b) if 32 <= b <= 126 else '.' for b in raw])
+        printable = ''.join(chr(b) if 32 <= b <= 126 else '.' for b in chunk_data)
         lines.append(f"{hexpart:<{width*3}}  {printable}")
     return "\n".join(lines)
 

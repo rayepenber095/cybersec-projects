@@ -137,7 +137,9 @@ def main():
     # Convert each candidate to properly padded MD5 blocks
     cand_bytes = [pad_to_block(c.encode('utf-8')) for c in CANDIDATES]
     N = len(cand_bytes)
-    buf = b"".join(cand_bytes)  # Concatenate all blocks into one buffer
+    
+    # Use numpy array for more efficient memory handling
+    buf = np.frombuffer(b"".join(cand_bytes), dtype=np.uint8)
 
     # Step 2: Initialize OpenCL (GPU/CPU compute framework)
     print("Initializing OpenCL...")

@@ -13,8 +13,6 @@ from urllib.parse import urljoin
 
 def check_path(base_url, path):
     url = urljoin(base_url, path.strip())
-    if not url.endswith("/"):
-        url += "/"  # check as directory by default
     try:
         r = requests.get(url, timeout=3, allow_redirects=False)
         code = r.status_code
